@@ -56,29 +56,32 @@
 //	Includes
 // ============================================================================
 
-#ifdef _WIN32
-#  include <windows.h>
-#endif
+// #ifdef _WIN32
+// #  include <windows.h>
+// #endif
 #include <stdio.h>
-#ifdef _WIN32
-#  define snprintf _snprintf
-#endif
+// #ifdef _WIN32
+// #  define snprintf _snprintf
+// #endif
 #include <string.h>
-#ifdef __APPLE__
-#  include <GLUT/glut.h>
-#else
-#  include <GL/glut.h>
-#endif
+// #ifdef __APPLE__
+// #  include <GLUT/glut.h>
+// #else
+// #  include <GL/glut.h>
+// #endif
 
 #include <AR/ar.h>
 #include <AR/arMulti.h>
 #include <AR/video.h>
-#include <AR/gsub_lite.h>
+// #include <AR/gsub_lite.h>
 #include <AR/arFilterTransMat.h>
 #include <AR2/tracking.h>
-
+ 
 #include "ARMarkerNFT.h"
 #include "trackingSub.h"
+
+#include <pthread.h>
+#include <sys/time.h>
 
 // ============================================================================
 //	Constants
@@ -115,13 +118,13 @@ static long                 gCallCountMarkerDetect = 0;
 
 
 // Drawing.
-static int gWindowW;
-static int gWindowH;
+// static int gWindowW;
+// static int gWindowH;
 static ARParamLT *gCparamLT = NULL;
-static ARGL_CONTEXT_SETTINGS_REF gArglSettings = NULL;
-static int gDrawRotate = FALSE;
-static float gDrawRotateAngle = 0;			// For use in drawing.
-static ARdouble cameraLens[16];
+//static ARGL_CONTEXT_SETTINGS_REF gArglSettings = NULL;
+// static int gDrawRotate = FALSE;
+// static float gDrawRotateAngle = 0;			// For use in drawing.
+// static ARdouble cameraLens[16];
 
 
 // ============================================================================
@@ -132,10 +135,11 @@ static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamL
 static int initNFT(ARParamLT *cparamLT, AR_PIXEL_FORMAT pixFormat);
 static int loadNFTData(void);
 static void cleanup(void);
-static void Keyboard(unsigned char key, int x, int y);
-static void Visibility(int visible);
-static void Reshape(int w, int h);
-static void Display(void);
+// static void Keyboard(unsigned char key, int x, int y);
+// static void Visibility(int visible);
+// static void Reshape(int w, int h);
+// static void Display(void);
+static void mainLoop(void);
 
 // ============================================================================
 //	Functions
@@ -144,19 +148,26 @@ static void Display(void);
 int main(int argc, char** argv)
 {
 	char glutGamemode[32];
-	const char *cparam_name = "../share/artoolkit-examples/Data2/camera_para.dat";
-	char vconf[] = "";
+	const char *cparam_name = "../share/artoolkit-examples/Data2/camera_para_logitech.dat";
+	char vconf[512];
     const char markerConfigDataFilename[] = "../share/artoolkit-examples/Data2/markers.dat";
 	
 #ifdef DEBUG
     arLogLevel = AR_LOG_LEVEL_DEBUG;
 #endif
+
+    if( argc == 1 ) vconf[0] = '\0';
+    else {
+        strcpy( vconf, argv[1] );
+        for( int i = 2; i < argc; i++ ) {strcat(vconf, " "); strcat(vconf,argv[i]);}
+    }
+    ARLOGi("Using video configuration '%s'.\n", vconf);
     
     //
 	// Library inits.
 	//
     
-	glutInit(&argc, argv);
+//	glutInit(&argc, argv);
     
 	//
 	// Video setup.
@@ -176,13 +187,13 @@ int main(int argc, char** argv)
     //
     
     // Create the OpenGL projection from the calibrated camera parameters.
-    arglCameraFrustumRH(&(gCparamLT->param), VIEW_DISTANCE_MIN, VIEW_DISTANCE_MAX, cameraLens);
+//    arglCameraFrustumRH(&(gCparamLT->param), VIEW_DISTANCE_MIN, VIEW_DISTANCE_MAX, cameraLens);
     
     if (!initNFT(gCparamLT, arVideoGetPixelFormat())) {
 		ARLOGe("main(): Unable to init NFT.\n");
 		exit(-1);
     }
-
+/*
 	//
 	// Graphics setup.
 	//
@@ -206,7 +217,7 @@ int main(int argc, char** argv)
 		exit(-1);
 	}
 	arUtilTimerReset();
-    
+*/    
     //
     // Markers setup.
     //
@@ -232,7 +243,7 @@ int main(int argc, char** argv)
     	ARLOGe("setupCamera(): Unable to begin camera data capture.\n");
 		return (FALSE);
 	}
-	
+/*	
 	// Register GLUT event-handling callbacks.
 	// NB: mainLoop() is registered by Visibility.
 	glutDisplayFunc(Display);
@@ -241,55 +252,63 @@ int main(int argc, char** argv)
 	glutKeyboardFunc(Keyboard);
 	
 	glutMainLoop();
+*/
 
+    pthread_t main_thread;
+    int ret = pthread_create(&main_thread, NULL, (void *)mainLoop, NULL);
+    if (ret != 0){
+        ARLOGe("Create mainloop thread error!\n");
+        return 0;
+    }
+    pthread_join(main_thread, NULL);
 	return (0);
 }
 
-// Something to look at, draw a rotating colour cube.
-static void DrawCube(void)
-{
-    // Colour cube data.
-    int i;
-	float fSize = 40.0f;
-    const GLfloat cube_vertices [8][3] = {
-        /* +z */ {0.5f, 0.5f, 0.5f}, {0.5f, -0.5f, 0.5f}, {-0.5f, -0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f},
-        /* -z */ {0.5f, 0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f} };
-    const GLubyte cube_vertex_colors [8][4] = {
-        {255, 255, 255, 255}, {255, 255, 0, 255}, {0, 255, 0, 255}, {0, 255, 255, 255},
-        {255, 0, 255, 255}, {255, 0, 0, 255}, {0, 0, 0, 255}, {0, 0, 255, 255} };
-    const GLubyte cube_faces [6][4] = { /* ccw-winding */
-        /* +z */ {3, 2, 1, 0}, /* -y */ {2, 3, 7, 6}, /* +y */ {0, 1, 5, 4},
-        /* -x */ {3, 0, 4, 7}, /* +x */ {1, 2, 6, 5}, /* -z */ {4, 5, 6, 7} };
+// // Something to look at, draw a rotating colour cube.
+// static void DrawCube(void)
+// {
+//     // Colour cube data.
+//     int i;
+// 	float fSize = 40.0f;
+//     const GLfloat cube_vertices [8][3] = {
+//         /* +z */ {0.5f, 0.5f, 0.5f}, {0.5f, -0.5f, 0.5f}, {-0.5f, -0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f},
+//         /* -z */ {0.5f, 0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f} };
+//     const GLubyte cube_vertex_colors [8][4] = {
+//         {255, 255, 255, 255}, {255, 255, 0, 255}, {0, 255, 0, 255}, {0, 255, 255, 255},
+//         {255, 0, 255, 255}, {255, 0, 0, 255}, {0, 0, 0, 255}, {0, 0, 255, 255} };
+//     const GLubyte cube_faces [6][4] = { /* ccw-winding */
+//         /* +z */ {3, 2, 1, 0}, /* -y */ {2, 3, 7, 6}, /* +y */ {0, 1, 5, 4},
+//         /* -x */ {3, 0, 4, 7}, /* +x */ {1, 2, 6, 5}, /* -z */ {4, 5, 6, 7} };
     
-    glPushMatrix(); // Save world coordinate system.
-    glRotatef(gDrawRotateAngle, 0.0f, 0.0f, 1.0f); // Rotate about z axis.
-    glScalef(fSize, fSize, fSize);
-    glTranslatef(0.0f, 0.0f, 0.5f); // Place base of cube on marker surface.
-    glDisable(GL_LIGHTING);
-    glDisable(GL_TEXTURE_2D);
-    glDisable(GL_BLEND);
-    glColorPointer(4, GL_UNSIGNED_BYTE, 0, cube_vertex_colors);
-    glVertexPointer(3, GL_FLOAT, 0, cube_vertices);
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
-    for (i = 0; i < 6; i++) {
-        glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
-    }
-    glDisableClientState(GL_COLOR_ARRAY);
-    glColor4ub(0, 0, 0, 255);
-    for (i = 0; i < 6; i++) {
-        glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
-    }
-    glPopMatrix();    // Restore world coordinate system.
-}
+//     glPushMatrix(); // Save world coordinate system.
+//     glRotatef(gDrawRotateAngle, 0.0f, 0.0f, 1.0f); // Rotate about z axis.
+//     glScalef(fSize, fSize, fSize);
+//     glTranslatef(0.0f, 0.0f, 0.5f); // Place base of cube on marker surface.
+//     glDisable(GL_LIGHTING);
+//     glDisable(GL_TEXTURE_2D);
+//     glDisable(GL_BLEND);
+//     glColorPointer(4, GL_UNSIGNED_BYTE, 0, cube_vertex_colors);
+//     glVertexPointer(3, GL_FLOAT, 0, cube_vertices);
+//     glEnableClientState(GL_VERTEX_ARRAY);
+//     glEnableClientState(GL_COLOR_ARRAY);
+//     for (i = 0; i < 6; i++) {
+//         glDrawElements(GL_TRIANGLE_FAN, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
+//     }
+//     glDisableClientState(GL_COLOR_ARRAY);
+//     glColor4ub(0, 0, 0, 255);
+//     for (i = 0; i < 6; i++) {
+//         glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_BYTE, &(cube_faces[i][0]));
+//     }
+//     glPopMatrix();    // Restore world coordinate system.
+// }
 
-static void DrawCubeUpdate(float timeDelta)
-{
-	if (gDrawRotate) {
-		gDrawRotateAngle += timeDelta * 45.0f; // Rotate cube at 45 degrees per second.
-		if (gDrawRotateAngle > 360.0f) gDrawRotateAngle -= 360.0f;
-	}
-}
+// static void DrawCubeUpdate(float timeDelta)
+// {
+// 	if (gDrawRotate) {
+// 		gDrawRotateAngle += timeDelta * 45.0f; // Rotate cube at 45 degrees per second.
+// 		if (gDrawRotateAngle > 360.0f) gDrawRotateAngle -= 360.0f;
+// 	}
+// }
 
 static int setupCamera(const char *cparam_name, char *vconf, ARParamLT **cparamLT_p)
 {	
@@ -481,8 +500,8 @@ static void cleanup(void)
     arParamLTFree(&gCparamLT);
 
     // OpenGL cleanup.
-    arglCleanup(gArglSettings);
-    gArglSettings = NULL;
+ //   arglCleanup(gArglSettings);
+ //   gArglSettings = NULL;
     
     // Camera cleanup.
 	arVideoCapStop();
@@ -491,7 +510,7 @@ static void cleanup(void)
 	CoUninitialize();
 #endif
 }
-
+/*
 static void Keyboard(unsigned char key, int x, int y)
 {
 	switch (key) {
@@ -516,119 +535,123 @@ static void Keyboard(unsigned char key, int x, int y)
 			break;
 	}
 }
-
+*/
 static void mainLoop(void)
 {
-	static int ms_prev;
-	int ms;
-	float s_elapsed;
-	AR2VideoBufferT *image;
+
+    struct timeval tp_prev, tp;
+    float s_elapsed;
+    //AR2VideoBufferT *image;
 
     // NFT results.
     static int detectedPage = -2; // -2 Tracking not inited, -1 tracking inited OK, >= 0 tracking online on page.
     static float trackingTrans[3][4];
     
-
     int             i, j, k;
-	
-	// Find out how long since mainLoop() last ran.
-	ms = glutGet(GLUT_ELAPSED_TIME);
-	s_elapsed = (float)(ms - ms_prev) * 0.001f;
-	if (s_elapsed < 0.01f) return; // Don't update more often than 100 Hz.
-	ms_prev = ms;
-	
-	// Update drawing.
-	DrawCubeUpdate(s_elapsed);
-	
-	// Grab a video frame.
-    image = arVideoGetImage();
-    if (image && image->fillFlag) {
-		
-        arglPixelBufferDataUpload(gArglSettings, image->buff);
-
-        gCallCountMarkerDetect++; // Increment ARToolKit FPS counter.
-
-        // Run marker detection on frame
-        if (threadHandle) {
-            // Perform NFT tracking.
-            float            err;
-            int              ret;
-            int              pageNo;
+    gettimeofday(&tp_prev, NULL);
+    while(1){    
+        // Find out how long since mainLoop() last ran.
+        gettimeofday(&tp, NULL);
+        s_elapsed = (float)(tp.tv_sec - tp_prev.tv_sec) + (float)(tp.tv_usec - tp_prev.tv_usec)/1000000;
+        if (s_elapsed < 0.01f) continue; // Don't update more often than 100 Hz.
+        tp_prev = tp;
+        ARLOGi("FrameRate: %0.2f fps\n", (float)1.0/s_elapsed);
+        
+        // Update drawing.
+    //	DrawCubeUpdate(s_elapsed);
+        
+        // Grab a video frame.
+        AR2VideoBufferT *image = arVideoGetImage();
+        if (image && image->fillFlag) {
             
-            if( detectedPage == -2 ) {
-                trackingInitStart( threadHandle, image->buffLuma );
-                detectedPage = -1;
-            }
-            if( detectedPage == -1 ) {
-                ret = trackingInitGetResult( threadHandle, trackingTrans, &pageNo);
-                if( ret == 1 ) {
-                    if (pageNo >= 0 && pageNo < surfaceSetCount) {
-                        ARLOGd("Detected page %d.\n", pageNo);
-                        detectedPage = pageNo;
-                        ar2SetInitTrans(surfaceSet[detectedPage], trackingTrans);
-                    } else {
-                        ARLOGe("Detected bad page %d.\n", pageNo);
+    //        arglPixelBufferDataUpload(gArglSettings, image->buff);
+
+    //        gCallCountMarkerDetect++; // Increment ARToolKit FPS counter.
+
+            // Run marker detection on frame
+            if (threadHandle) {
+                // Perform NFT tracking.
+                float            err;
+                int              ret;
+                int              pageNo;
+                
+                if( detectedPage == -2 ) {
+                    trackingInitStart( threadHandle, image->buffLuma );
+                    detectedPage = -1;
+                }
+                if( detectedPage == -1 ) {
+                    ret = trackingInitGetResult( threadHandle, trackingTrans, &pageNo);
+                    if( ret == 1 ) {
+                        if (pageNo >= 0 && pageNo < surfaceSetCount) {
+                            ARLOGd("Detected page %d.\n", pageNo);
+                            detectedPage = pageNo;
+                            ar2SetInitTrans(surfaceSet[detectedPage], trackingTrans);
+                        } else {
+                            ARLOGe("Detected bad page %d.\n", pageNo);
+                            detectedPage = -2;
+                        }
+                    } else if( ret < 0 ) {
+                        ARLOGd("No page detected.\n");
                         detectedPage = -2;
                     }
-                } else if( ret < 0 ) {
-                    ARLOGd("No page detected.\n");
-                    detectedPage = -2;
                 }
-            }
-            if( detectedPage >= 0 && detectedPage < surfaceSetCount) {
-                if( ar2Tracking(ar2Handle, surfaceSet[detectedPage], image->buff, trackingTrans, &err) < 0 ) {
-                    ARLOGd("Tracking lost.\n");
-                    detectedPage = -2;
-                } else {
-                    ARLOGd("Tracked page %d (max %d).\n", detectedPage, surfaceSetCount - 1);
-                }
-            }
-        } else {
-            ARLOGe("Error: threadHandle\n");
-            detectedPage = -2;
-        }
-        
-        // Update markers.
-        for (i = 0; i < markersNFTCount; i++) {
-            markersNFT[i].validPrev = markersNFT[i].valid;
-            if (markersNFT[i].pageNo >= 0 && markersNFT[i].pageNo == detectedPage) {
-                markersNFT[i].valid = TRUE;
-                for (j = 0; j < 3; j++) for (k = 0; k < 4; k++) markersNFT[i].trans[j][k] = trackingTrans[j][k];
-            }
-            else markersNFT[i].valid = FALSE;
-            if (markersNFT[i].valid) {
-                
-                // Filter the pose estimate.
-                if (markersNFT[i].ftmi) {
-                    if (arFilterTransMat(markersNFT[i].ftmi, markersNFT[i].trans, !markersNFT[i].validPrev) < 0) {
-                        ARLOGe("arFilterTransMat error with marker %d.\n", i);
+                if( detectedPage >= 0 && detectedPage < surfaceSetCount) {
+                    if( ar2Tracking(ar2Handle, surfaceSet[detectedPage], image->buff, trackingTrans, &err) < 0 ) {
+                        ARLOGd("Tracking lost.\n");
+                        detectedPage = -2;
+                    } else {
+                        ARLOGd("Tracked page %d (max %d).\n", detectedPage, surfaceSetCount - 1);
+                        ARLOGe("Detected Pos: %0.2f, %0.2f, %0.2f\n", trackingTrans[0][3], trackingTrans[1][3], trackingTrans[2][3]);
                     }
                 }
-                
-                if (!markersNFT[i].validPrev) {
-                    // Marker has become visible, tell any dependent objects.
-                    // --->
-                }
-                
-                // We have a new pose, so set that.
-                arglCameraViewRH((const ARdouble (*)[4])markersNFT[i].trans, markersNFT[i].pose.T, VIEW_SCALEFACTOR);
-                // Tell any dependent objects about the update.
-                // --->
-                
             } else {
-                
-                if (markersNFT[i].validPrev) {
-                    // Marker has ceased to be visible, tell any dependent objects.
-                    // --->
+                ARLOGe("Error: threadHandle\n");
+                detectedPage = -2;
+            }
+            
+            // Update markers.
+            for (i = 0; i < markersNFTCount; i++) {
+                markersNFT[i].validPrev = markersNFT[i].valid;
+                if (markersNFT[i].pageNo >= 0 && markersNFT[i].pageNo == detectedPage) {
+                    markersNFT[i].valid = TRUE;
+                    for (j = 0; j < 3; j++) for (k = 0; k < 4; k++) markersNFT[i].trans[j][k] = trackingTrans[j][k];
                 }
-            }                    
-        }
+                else markersNFT[i].valid = FALSE;
+                if (markersNFT[i].valid) {
+                    
+                    // Filter the pose estimate.
+                    if (markersNFT[i].ftmi) {
+                        if (arFilterTransMat(markersNFT[i].ftmi, markersNFT[i].trans, !markersNFT[i].validPrev) < 0) {
+                            ARLOGe("arFilterTransMat error with marker %d.\n", i);
+                        }
+                    }
+                    
+                    if (!markersNFT[i].validPrev) {
+                        // Marker has become visible, tell any dependent objects.
+                        // --->
+                    }
+                    
+                    // We have a new pose, so set that.
+    //                arglCameraViewRH((const ARdouble (*)[4])markersNFT[i].trans, markersNFT[i].pose.T, VIEW_SCALEFACTOR);
+                    // Tell any dependent objects about the update.
+                    // --->
+                    
+                } else {
+                    
+                    if (markersNFT[i].validPrev) {
+                        // Marker has ceased to be visible, tell any dependent objects.
+                        // --->
+                    }
+                }                    
+            }
 
-		// Tell GLUT the display has changed.
-		glutPostRedisplay();
-	}
+            // Tell GLUT the display has changed.
+    //		glutPostRedisplay();
+        }
+    }
 }
 
+/*
 //
 //	This function is called on events when the visibility of the
 //	GLUT window changes (including when it first becomes visible).
@@ -717,3 +740,4 @@ static void Display(void)
     
 	glutSwapBuffers();
 }
+*/

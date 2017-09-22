@@ -55,15 +55,19 @@
 #  include <OpenGL/gl.h>
 #  include "opencv2/calib3d/calib3d_c.h"
 #elif defined(__linux) || defined(_WIN32)
-#  include <GL/gl.h>
+//#  include <GL/gl.h>
+//#  include "opencv2/opencv.hpp"
 #  include "opencv2/calib3d/calib3d.hpp"
+#  include "opencv2/highgui/highgui.hpp"
+//#  include "opencv2/core/core.hpp"
 #endif
 #include <opencv/cv.hpp>
 #include <AR/ar.h>
-#include <AR/gsub.h>
+//#include <AR/gsub.h>
 #include <AR/video.h>
 #include <AR/arImageProc.h>
 
+using namespace cv;
 
 #define      CHESSBOARD_CORNER_NUM_X        7
 #define      CHESSBOARD_CORNER_NUM_Y        5
@@ -74,7 +78,7 @@
 
 
 AR2VideoParamT      *gVid                 = NULL;
-ARGViewportHandle   *vp;
+//ARGViewportHandle   *vp;
 AR_PIXEL_FORMAT      pixFormat;
 int                  xsize;
 int                  ysize;
@@ -94,7 +98,7 @@ static void          init(int argc, char *argv[]);
 static void          usage(char *com);
 static void          cleanup(void);
 static void          mainLoop(void);
-static void          keyEvent( unsigned char key, int x, int y);
+static void          keyEvent( int keyvalue);
 static void          calib(void);
 static void          convParam(float intr[3][4], float dist[4], int xsize, int ysize, ARParam *param);
 static ARdouble      getSizeFactor(ARdouble dist_factor[], int xsize, int ysize, int dist_function_version);
@@ -103,12 +107,15 @@ static void          saveParam( ARParam *param );
 
 int main(int argc, char *argv[])
 {
-	glutInit(&argc, argv);
+//	glutInit(&argc, argv);
     init(argc, argv);
-    argSetDispFunc( mainLoop, 1 );
-    argSetKeyFunc( keyEvent );
+//    argSetDispFunc( mainLoop, 1 );
+//    argSetKeyFunc( keyEvent );
     ar2VideoCapStart(gVid);
-    argMainLoop();
+//    argMainLoop();
+    namedWindow("Image",1);
+    while(1)
+        mainLoop();
     return 0;
 }
 
@@ -125,30 +132,37 @@ static void mainLoop(void)
         return;
     }
 
-    glClear(GL_COLOR_BUFFER_BIT);
-    argDrawMode2D(vp);
-    argDrawImage(buff->buff);
+ //   glClear(GL_COLOR_BUFFER_BIT);
+ //   argDrawMode2D(vp);
+ //   argDrawImage(buff->buff);
   
     // Copy the luma-only image into the backing for calibImage.
     memcpy(imageLumaCopy, buff->buffLuma, xsize*ysize);
     
     cornerFlag = cvFindChessboardCorners(calibImage, cvSize(chessboardCornerNumY,chessboardCornerNumX),
                                          corners, &cornerCount, CV_CALIB_CB_ADAPTIVE_THRESH|CV_CALIB_CB_FILTER_QUADS );
-    if(cornerFlag) glColor4ub(255, 0, 0, 255);
-    else           glColor4ub(0, 255, 0, 255);
-    glLineWidth(2.0f);
+//    if(cornerFlag) glColor4ub(255, 0, 0, 255);
+//    else           glColor4ub(0, 255, 0, 255);
+//    glLineWidth(2.0f);
     //ARLOG("Detected corners = %d\n", cornerCount);
-    for( i = 0; i < cornerCount; i++ ) {
-        argDrawLineByObservedPos(corners[i].x-5, corners[i].y-5, corners[i].x+5, corners[i].y+5);
-        argDrawLineByObservedPos(corners[i].x-5, corners[i].y+5, corners[i].x+5, corners[i].y-5);
-        //ARLOG("  %f, %f\n", corners[i].x, corners[i].y);
-        sprintf(buf, "%d\n", i);
-        argDrawStringsByObservedPos(buf, corners[i].x, corners[i].y+20);
-    }
-    sprintf(buf, "Captured Image: %2d/%2d\n", capturedImageNum, calibImageNum);
-    argDrawStringsByObservedPos(buf, 10, 30);
+    // for( i = 0; i < cornerCount; i++ ) {
+    //     argDrawLineByObservedPos(corners[i].x-5, corners[i].y-5, corners[i].x+5, corners[i].y+5);
+    //     argDrawLineByObservedPos(corners[i].x-5, corners[i].y+5, corners[i].x+5, corners[i].y-5);
+    //     //ARLOG("  %f, %f\n", corners[i].x, corners[i].y);
+    //     sprintf(buf, "%d\n", i);
+    //     argDrawStringsByObservedPos(buf, corners[i].x, corners[i].y+20);
+    // }
+    // sprintf(buf, "Captured Image: %2d/%2d\n", capturedImageNum, calibImageNum);
+    // argDrawStringsByObservedPos(buf, 10, 30);
 
-    argSwapBuffers();
+    cv::Mat grayFrame = cv::Mat(ysize, xsize, CV_8UC1, imageLumaCopy);
+    imshow("Image", grayFrame);
+    keyEvent(waitKey(1)); 
+
+//    argSwapBuffers();
+
+
+
 }
 
 static void usage(char *com)
@@ -166,7 +180,7 @@ static void usage(char *com)
 
 static void init(int argc, char *argv[])
 {
-    ARGViewport     viewport;
+    //ARGViewport     viewport;
     char           *vconf = NULL;
     int             i;
     int             gotTwoPartOption;
@@ -233,30 +247,30 @@ static void init(int argc, char *argv[])
     ARLOG("Image size (x,y) = (%d,%d)\n", xsize, ysize);
     if ((pixFormat = ar2VideoGetPixelFormat(gVid)) == AR_PIXEL_FORMAT_INVALID) exit(0);
   
-	screenWidth = glutGet(GLUT_SCREEN_WIDTH);
-	screenHeight = glutGet(GLUT_SCREEN_HEIGHT);
-	if (screenWidth > 0 && screenHeight > 0) {
-        screenMargin = (int)(MAX(screenWidth, screenHeight) * SCREEN_SIZE_MARGIN);
-        if ((screenWidth - screenMargin) < xsize || (screenHeight - screenMargin) < ysize) {
-            viewport.xsize = screenWidth - screenMargin;
-            viewport.ysize = screenHeight - screenMargin;
-            ARLOG("Scaling window to fit onto %dx%d screen (with %2.0f%% margin).\n", screenWidth, screenHeight, SCREEN_SIZE_MARGIN*100.0);
-        } else {
-            viewport.xsize = xsize;
-            viewport.ysize = ysize;
-        }
-	} else {
-        viewport.xsize = xsize;
-        viewport.ysize = ysize;
-	}
-    viewport.sx = 0;
-    viewport.sy = 0;
-    if( (vp=argCreateViewport(&viewport)) == NULL ) exit(0);
-    argViewportSetImageSize( vp, xsize, ysize );
-    argViewportSetPixFormat( vp, pixFormat );
-    argViewportSetDispMethod( vp, AR_GL_DISP_METHOD_TEXTURE_MAPPING_FRAME );
-    argViewportSetDistortionMode( vp, AR_GL_DISTORTION_COMPENSATE_DISABLE );
-    argViewportSetDispMode(vp, AR_GL_DISP_MODE_FIT_TO_VIEWPORT_KEEP_ASPECT_RATIO);
+	// screenWidth = glutGet(GLUT_SCREEN_WIDTH);
+	// screenHeight = glutGet(GLUT_SCREEN_HEIGHT);
+	// if (screenWidth > 0 && screenHeight > 0) {
+    //     screenMargin = (int)(MAX(screenWidth, screenHeight) * SCREEN_SIZE_MARGIN);
+    //     if ((screenWidth - screenMargin) < xsize || (screenHeight - screenMargin) < ysize) {
+    //         viewport.xsize = screenWidth - screenMargin;
+    //         viewport.ysize = screenHeight - screenMargin;
+    //         ARLOG("Scaling window to fit onto %dx%d screen (with %2.0f%% margin).\n", screenWidth, screenHeight, SCREEN_SIZE_MARGIN*100.0);
+    //     } else {
+    //         viewport.xsize = xsize;
+    //         viewport.ysize = ysize;
+    //     }
+	// } else {
+    //     viewport.xsize = xsize;
+    //     viewport.ysize = ysize;
+	// }
+    // viewport.sx = 0;
+    // viewport.sy = 0;
+    // if( (vp=argCreateViewport(&viewport)) == NULL ) exit(0);
+    // argViewportSetImageSize( vp, xsize, ysize );
+    // argViewportSetPixFormat( vp, pixFormat );
+    // argViewportSetDispMethod( vp, AR_GL_DISP_METHOD_TEXTURE_MAPPING_FRAME );
+    // argViewportSetDistortionMode( vp, AR_GL_DISTORTION_COMPENSATE_DISABLE );
+    // argViewportSetDispMode(vp, AR_GL_DISP_MODE_FIT_TO_VIEWPORT_KEEP_ASPECT_RATIO);
 
     // Set up the grayscale image. We must always copy, since we need OpenCV to be able to wrap the memory.
     arMalloc(imageLumaCopy, ARUint8, xsize*ysize);
@@ -286,7 +300,7 @@ static void cleanup(void)
     
     ar2VideoCapStop(gVid);
     ar2VideoClose(gVid);
-    argCleanup();
+   // argCleanup();
     
     if (cwd) {
         free(cwd);
@@ -296,33 +310,37 @@ static void cleanup(void)
     exit(0);
 }
 
-static void  keyEvent( unsigned char key, int x, int y)
+static void  keyEvent( int keyvalue)
 {
     CvPoint2D32f   *p1, *p2;
     int             i;
 
-    if( key == 0x1b || key == 'q' || key == 'Q' ) {
+    if( keyvalue == 27 || keyvalue == 113 || keyvalue == 81 ) {
         cleanup();
     }
 
-    if( cornerFlag && key==' ' ) {
-        cvFindCornerSubPix( calibImage, corners, chessboardCornerNumX*chessboardCornerNumY, cvSize(5,5),
-                            cvSize(-1,-1), cvTermCriteria (CV_TERMCRIT_ITER, 100, 0.1)  );
-        p1 = &corners[0];
-        p2 = &cornerSet[capturedImageNum*chessboardCornerNumX*chessboardCornerNumY];
-        for( i = 0; i < chessboardCornerNumX*chessboardCornerNumY; i++ ) {
-            *(p2++) = *(p1++);
-        }
-        capturedImageNum++;
-        ARLOG("---------- %2d/%2d -----------\n", capturedImageNum, calibImageNum);
-        for( i = 0; i < chessboardCornerNumX*chessboardCornerNumY; i++ ) {
-            ARLOG("  %f, %f\n", corners[i].x, corners[i].y);
-        }
-        ARLOG("---------- %2d/%2d -----------\n", capturedImageNum, calibImageNum);
-
-        if( capturedImageNum == calibImageNum ) {
-            calib();
-            cleanup();
+    if( keyvalue == 32 ) {
+        if (cornerFlag){
+            cvFindCornerSubPix( calibImage, corners, chessboardCornerNumX*chessboardCornerNumY, cvSize(5,5),
+                                cvSize(-1,-1), cvTermCriteria (CV_TERMCRIT_ITER, 100, 0.1)  );
+            p1 = &corners[0];
+            p2 = &cornerSet[capturedImageNum*chessboardCornerNumX*chessboardCornerNumY];
+            for( i = 0; i < chessboardCornerNumX*chessboardCornerNumY; i++ ) {
+                *(p2++) = *(p1++);
+            }
+            capturedImageNum++;
+            ARLOG("---------- %2d/%2d -----------\n", capturedImageNum, calibImageNum);
+            for( i = 0; i < chessboardCornerNumX*chessboardCornerNumY; i++ ) {
+                ARLOG("  %f, %f\n", corners[i].x, corners[i].y);
+            }
+            ARLOG("Captured Image ---------- %2d/%2d -----------\n", capturedImageNum, calibImageNum);
+            
+            if( capturedImageNum == calibImageNum ) {
+                calib();
+                cleanup();
+            }
+        } else {
+            ARLOGi("No full checkerboard is captured.\n");
         }
     }
 }

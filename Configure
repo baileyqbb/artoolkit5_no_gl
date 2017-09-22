@@ -45,57 +45,19 @@
 MDIR=".                              \
       lib/SRC                        \
       lib/SRC/AR                     \
-
       lib/SRC/ARICP                  \
       lib/SRC/AR2                    \
-      lib/SRC/ARWrapper              \
       lib/SRC/KPM                    \
       lib/SRC/Util                   \
       lib/SRC/ARMulti                \
-      lib/SRC/Gl                     \
       lib/SRC/Video                  \
-      lib/SRC/VideoDummy             \
-      lib/SRC/VideoImage             \
-      lib/SRC/VideoLinuxV4L          \
       lib/SRC/VideoLinuxV4L2         \
-      lib/SRC/VideoLinux1394Cam      \
-      lib/SRC/VideoLinux1394Cam/ver1 \
-      lib/SRC/VideoLinux1394Cam/ver2 \
-      lib/SRC/VideoQuickTime         \
-      lib/SRC/VideoQuickTime7        \
-      lib/SRC/VideoGStreamer         \
-      lib/SRC/ARosg                  \
-      lib/SRC/Eden                   \
       util                           \
       util/calib_camera              \
-      util/calib_stereo              \
-      util/mk_patt                   \
-      util/1394                      \
-      util/1394/whiteBalance         \
-      util/1394/listCamera           \
-      util/1394/checkImage           \
-      util/calib_optical             \
-      util/calib_camera_old-v3       \
-      util/calib_stereo_old-v3       \
-      util/check_id                  \
       util/genTexData                \
-      util/genMarkerSet              \
-      util/dispImageSet              \
-      util/dispFeatureSet            \
       util/checkResolution           \
       examples                       \
-      examples/simple                \
-      examples/simpleLite            \
-      examples/simpleMovie           \
-      examples/multi                 \
-      examples/simpleOSG             \
-      examples/stereo                \
-      examples/multiCube             \
-      examples/multiWin              \
-      examples/optical               \
-      examples/opticalStereo         \
-      examples/nftSimple             \
-      examples/nftBook               "
+      examples/nftSimple             "
       #lib/SRC/VideoLinuxDV  \
       #lib/SRC/VideoSGI      \
       #util/calib_distortion \
@@ -112,155 +74,155 @@ then
     SYSTEM="linux-$MACHINE"
     echo "\nThis script configures ARToolKit libraries, utilities and examples. For details on dependencies and further information please visit http://artoolkit.org/documentation/doku.php?id=8_Advanced_Topics:build_artoolkit \n\n"
     echo "Standard compiler is gcc and g++ with libstdc++. Do you want to use the Clang compiler with libc++ instead? (y or n)"
-    echo -n "Enter : "
-    read ANS
-    if [ "$ANS" = "y" ]
-    then
-        CLANGCC="y"
-    elif [ "$ANS" = "n" ]
-    then
-        CLANGCC="n"
-    else
-        echo "Please enter y or n."
-        exit 0
-    fi
+#    echo -n "Enter : "
+#    read ANS
+#    if [ "$ANS" = "y" ]
+#    then
+#        CLANGCC="y"
+#    elif [ "$ANS" = "n" ]
+#    then
+    CLANGCC="n"
+#    else
+#        echo "Please enter y or n."
+#        exit 0
+#    fi
 
     DEFAULT_CAP_DEVICE=""
     echo "Do you want to enable the Video4Linux2 capture module? (y or n)"
-    echo -n "Enter : "
-    read ANS
-    if [ "$ANS" = "y" ]
-    then
-        INPUT_V4L2="y"
-    elif [ "$ANS" = "n" ]
-    then
-        INPUT_V4L2="n"
-    else
-        echo "Please enter y or n."
-        exit 0
-    fi
+#    echo -n "Enter : "
+#    read ANS
+#    if [ "$ANS" = "y" ]
+#    then
+    INPUT_V4L2="y"
+#    elif [ "$ANS" = "n" ]
+#    then
+#        INPUT_V4L2="n"
+#    else
+#        echo "Please enter y or n."
+#        exit 0
+#    fi
     if [ "$INPUT_V4L2" = "y" ]
     then
         echo "Do you want to use it as the default input device? (y or n)"
-        echo -n "Enter : "
-        read ANS
-        if [ "$ANS" = "y" ]
-        then
-            DEFAULT_CAP_DEVICE="V4L2"
-        elif [ "$ANS" = "n" ]
-        then
-            DEFAULT_CAP_DEVICE=""
-        else
-            echo "Please enter y or n."
-            exit 0
-        fi
+#        echo -n "Enter : "
+#        read ANS
+#        if [ "$ANS" = "y" ]
+#        then
+        DEFAULT_CAP_DEVICE="V4L2"
+#        elif [ "$ANS" = "n" ]
+#        then
+#            DEFAULT_CAP_DEVICE=""
+#        else
+#            echo "Please enter y or n."
+#            exit 0
+#        fi
     fi
     echo "Do you want to enable the Video4Linux capture module? (y or n)"
-    echo -n "Enter : "
-    read ANS
-    if [ "$ANS" = "y" ]
-    then
-        INPUT_V4L="y"
-    elif [ "$ANS" = "n" ]
-    then
-        INPUT_V4L="n"
-    else
-        echo "Please enter y or n."
-        exit 0
-    fi
-    if [ "$DEFAULT_CAP_DEVICE" = "" ]
-    then
-    if [ "$INPUT_V4L" = "y" ]
-    then
-        echo "Do you want to use it as the default input device? (y or n)"
-        echo -n "Enter : "
-        read ANS
-        if [ "$ANS" = "y" ]
-        then
-            DEFAULT_CAP_DEVICE="V4L"
-        elif [ "$ANS" = "n" ]
-        then
-            DEFAULT_CAP_DEVICE=""
-        else
-            echo "Please enter y or n."
-            exit 0
-        fi
-    fi
-    fi
+#    echo -n "Enter : "
+#    read ANS
+#    if [ "$ANS" = "y" ]
+#    then
+#        INPUT_V4L="y"
+#    elif [ "$ANS" = "n" ]
+#    then
+    INPUT_V4L="n"
+#    else
+#        echo "Please enter y or n."
+#        exit 0
+#    fi
+#    if [ "$DEFAULT_CAP_DEVICE" = "" ]
+#    then
+    # if [ "$INPUT_V4L" = "y" ]
+    # then
+    #     echo "Do you want to use it as the default input device? (y or n)"
+    #     echo -n "Enter : "
+    #     read ANS
+    #     if [ "$ANS" = "y" ]
+    #     then
+    #         DEFAULT_CAP_DEVICE="V4L"
+    #     elif [ "$ANS" = "n" ]
+    #     then
+    #         DEFAULT_CAP_DEVICE=""
+    #     else
+    #         echo "Please enter y or n."
+    #         exit 0
+    #     fi
+    # fi
+    #fi
 
     echo "Do you want to enable the IEEE 1394 Digital Video Camera capture module? (y or n)"
     echo -n "Enter : "
-    read ANS
-    if [ "$ANS" = "y" ]
-    then
-        INPUT_CAM1394="y"
-    elif [ "$ANS" = "n" ]
-    then
-        INPUT_CAM1394="n"
-    else
-        echo "Please enter y or n."
-        exit 0
-    fi
-    if [ "$INPUT_CAM1394" = "y" ]
-    then
-        echo "Do you want to use libdc1394_Ver.2? (y or n)"
-        echo -n "Enter : "
-        read ANS
-        if [ "$ANS" = "y" ]
-        then
-            DC1394_V2="y"
-        elif [ "$ANS" = "n" ]
-        then
-            DC1394_V2="n"
-        else
-            echo "Please enter y or n."
-            exit 0
-        fi
+#    read ANS
+#    if [ "$ANS" = "y" ]
+#    then
+#        INPUT_CAM1394="y"
+#    elif [ "$ANS" = "n" ]
+#    then
+    INPUT_CAM1394="n"
+#    else
+#        echo "Please enter y or n."
+#        exit 0
+#    fi
+    # if [ "$INPUT_CAM1394" = "y" ]
+    # then
+    #     echo "Do you want to use libdc1394_Ver.2? (y or n)"
+    #     echo -n "Enter : "
+    #     read ANS
+    #     if [ "$ANS" = "y" ]
+    #     then
+    #         DC1394_V2="y"
+    #     elif [ "$ANS" = "n" ]
+    #     then
+    #         DC1394_V2="n"
+    #     else
+    #         echo "Please enter y or n."
+    #         exit 0
+    #     fi
 
-        if [ "$DEFAULT_CAP_DEVICE" = "" ]
-        then
-            echo "Do you want to use it as the default input device? (y or n)"
-            echo -n "Enter : "
-            read ANS
-            if [ "$ANS" = "y" ]
-            then
-                DEFAULT_CAP_DEVICE="CAM1394"
-            elif [ "$ANS" = "n" ]
-            then
-                DEFAULT_CAP_DEVICE=""
-            else
-                echo "Please enter y or n."
-                exit 0
-            fi
-        fi
-        echo "Does your IEEE1394 camera support color image? (y or n)"
-        echo -n "Enter : "
-        read ANS
-        if [ "$ANS" = "y" ]
-        then
-            COLOR_1394="y"
-        elif [ "$ANS" = "n" ]
-        then
-            COLOR_1394="n"
-        else
-            echo "Please enter y or n."
-            exit 0
-        fi
+    #     if [ "$DEFAULT_CAP_DEVICE" = "" ]
+    #     then
+    #         echo "Do you want to use it as the default input device? (y or n)"
+    #         echo -n "Enter : "
+    #         read ANS
+    #         if [ "$ANS" = "y" ]
+    #         then
+    #             DEFAULT_CAP_DEVICE="CAM1394"
+    #         elif [ "$ANS" = "n" ]
+    #         then
+    #             DEFAULT_CAP_DEVICE=""
+    #         else
+    #             echo "Please enter y or n."
+    #             exit 0
+    #         fi
+    #     fi
+    #     echo "Does your IEEE1394 camera support color image? (y or n)"
+    #     echo -n "Enter : "
+    #     read ANS
+    #     if [ "$ANS" = "y" ]
+    #     then
+    #         COLOR_1394="y"
+    #     elif [ "$ANS" = "n" ]
+    #     then
+    #         COLOR_1394="n"
+    #     else
+    #         echo "Please enter y or n."
+    #         exit 0
+    #     fi
 
-        echo "Do you use a DragonFly as a IEEE 1394 camera? (y or n)"
-        echo -n "Enter : "
-        read ANS
-        if [ "$ANS" = "y" ]
-        then
-            DRAGON="y"
-        elif [ "$ANS" = "n" ]
-        then
-            DRAGON="n"
-        else
-            echo "Please enter y or n."
-            exit 0
-        fi
-    fi
+    #     echo "Do you use a DragonFly as a IEEE 1394 camera? (y or n)"
+    #     echo -n "Enter : "
+    #     read ANS
+    #     if [ "$ANS" = "y" ]
+    #     then
+    #         DRAGON="y"
+    #     elif [ "$ANS" = "n" ]
+    #     then
+    #         DRAGON="n"
+    #     else
+    #         echo "Please enter y or n."
+    #         exit 0
+    #     fi
+    # fi
 
 #    echo "Do you want to use DV Video Camera? (y or n)"
 #    echo -n "Enter : "
@@ -296,50 +258,50 @@ then
 #    fi
 
     echo "Do you want to enable the GStreamer capture module? (y or n)"
-    echo -n "Enter : "
-    read ANS
-    if [ "$ANS" = "y" ]
-    then
-        INPUT_GSTREAMER="y"
-    elif [ "$ANS" = "n" ]
-    then
-        INPUT_GSTREAMER="n"
-    else
-        echo "Please enter y or n."
-        exit 0
-    fi
-    if [ "$INPUT_GSTREAMER" = "y" ]
-    then
-        echo "Experimental: Do you want to use gstreamer-1.0 instead of gstreamer-0.10? (y or n)"
-        echo -n "Enter : "
-        read ANS
-        if [ "$ANS" = "y" ]
-        then
-            USE_GSTREAMER_1="y"
-        elif [ "$ANS" = "n" ]
-        then
-            USE_GSTREAMER_1="n"
-        else
-            echo "Please enter y or n."
-            exit 0
-        fi
-        if [ "$DEFAULT_CAP_DEVICE" = "" ]
-        then
-            echo "Do you want to use it as the default input device? (y or n)"
-            echo -n "Enter : "
-            read ANS
-            if [ "$ANS" = "y" ]
-            then
-                DEFAULT_CAP_DEVICE="GSTREAMER"
-            elif [ "$ANS" = "n" ]
-            then
-                DEFAULT_CAP_DEVICE=""
-            else
-                echo "Please enter y or n."
-                exit 0
-            fi
-        fi
-    fi
+#    echo -n "Enter : "
+#    read ANS
+#    if [ "$ANS" = "y" ]
+#    then
+#        INPUT_GSTREAMER="y"
+#    elif [ "$ANS" = "n" ]
+#    then
+    INPUT_GSTREAMER="n"
+#    else
+#        echo "Please enter y or n."
+#        exit 0
+#    fi
+    # if [ "$INPUT_GSTREAMER" = "y" ]
+    # then
+    #     echo "Experimental: Do you want to use gstreamer-1.0 instead of gstreamer-0.10? (y or n)"
+    #     echo -n "Enter : "
+    #     read ANS
+    #     if [ "$ANS" = "y" ]
+    #     then
+    #         USE_GSTREAMER_1="y"
+    #     elif [ "$ANS" = "n" ]
+    #     then
+    #         USE_GSTREAMER_1="n"
+    #     else
+    #         echo "Please enter y or n."
+    #         exit 0
+    #     fi
+    #     if [ "$DEFAULT_CAP_DEVICE" = "" ]
+    #     then
+    #         echo "Do you want to use it as the default input device? (y or n)"
+    #         echo -n "Enter : "
+    #         read ANS
+    #         if [ "$ANS" = "y" ]
+    #         then
+    #             DEFAULT_CAP_DEVICE="GSTREAMER"
+    #         elif [ "$ANS" = "n" ]
+    #         then
+    #             DEFAULT_CAP_DEVICE=""
+    #         else
+    #             echo "Please enter y or n."
+    #             exit 0
+    #         fi
+    #     fi
+    # fi
 
 
     if [ "$CLANGCC" = "y" ]
@@ -351,7 +313,7 @@ then
     else
         CC="gcc"
         CXX="g++ -std=c++11 "
-        CFLAG="-O3 -fPIC -march=core2 -DHAVE_NFT=1"
+        CFLAG="-O3 -fPIC -march=native -DHAVE_NFT=1"
         STDCXXLIB="-lstdc++"
     fi
 
@@ -384,7 +346,8 @@ then
     AR="ar"
     ARFLAGS="rs"
     RANLIB="true"
-    LIBS="-lglut -lGLU -lGL -lX11 -lm -lpthread -ljpeg"
+    #LIBS="-lglut -lGLU -lGL -lX11 -lm -lpthread -ljpeg"
+    LIBS="-lm -lpthread -ljpeg"
 
     if [ "$INPUT_GSTREAMER" = "y" ]
     then
@@ -432,7 +395,8 @@ then
     AR="ar"
     ARFLAGS="rs"
     RANLIB="true"
-    LIBS="-lglut -lGLU -lGL -lXmu -lX11 -lvl -lm -ljpeg"
+    #LIBS="-lglut -lGLU -lGL -lXmu -lX11 -lvl -lm -ljpeg"
+    LIBS="-lvl -lm -ljpeg"
     CV_CFLAG=`pkg-config opencv --cflags`
     CV_LIBS=`pkg-config opencv --libs`
 elif [ "$E" = "IRIX64" ]
@@ -446,7 +410,8 @@ then
     AR="ar"
     ARFLAGS="rs"
     RANLIB="true"
-    LIBS="-lglut -lGLU -lGL -lXmu -lX11 -lvl -lm -ljpeg"
+    #LIBS="-lglut -lGLU -lGL -lXmu -lX11 -lvl -lm -ljpeg"
+    LIBS="-lvl -lm -ljpeg"
     CV_CFLAG=`pkg-config opencv --cflags`
     CV_LIBS=`pkg-config opencv --libs`
 elif [ "$E" = "Darwin" ]
@@ -542,7 +507,8 @@ then
     AR="ar"
     ARFLAGS="-r -u"
     RANLIB="true"
-    LIBS="-framework Accelerate -framework QTKit -framework CoreVideo -framework Carbon -framework GLUT -framework OpenGL -framework Cocoa -ljpeg"
+    #LIBS="-framework Accelerate -framework QTKit -framework CoreVideo -framework Carbon -framework GLUT -framework OpenGL -framework Cocoa -ljpeg"
+    LIBS="-framework Accelerate -framework QTKit -framework CoreVideo -framework Carbon -framework Cocoa -ljpeg"
     if [ "$INPUT_QUICKTIME" = "y" ]
     then
         LIBS="$LIBS -framework QuickTime"
@@ -594,18 +560,18 @@ fi
 if [ "$CLANGCC" = "n" ]
 then
     echo "Enable the OpenSceneGraph renderer and examples? (y or n)"
-    echo -n "Enter : "
-    read ANS
-    if [ "$ANS" = "y" ]
-    then
-        ENABLE_OSG="y"
-    elif [ "$ANS" = "n" ]
-    then
-        ENABLE_OSG="n"
-    else
-        echo "Please enter y or n."
-        exit 0
-    fi
+#    echo -n "Enter : "
+#    read ANS
+#    if [ "$ANS" = "y" ]
+#    then
+#        ENABLE_OSG="y"
+#    elif [ "$ANS" = "n" ]
+#    then
+    ENABLE_OSG="n"
+#    else
+#        echo "Please enter y or n."
+#        exit 0
+#    fi
 else
     ENABLE_OSG="n"
 fi #[ "$CLANGCC" = "n" ]
