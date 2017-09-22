@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "kdtree": "c",
+        "arfiltertransmat.h": "c",
+        "video.h": "c",
+        "armulti.h": "c",
+        "boundingbox": "c",
+        "boundingsphere": "c",
+        "timer": "c",
+        "*.tcc": "c",
+        "cameramanipulator": "c",
+        "graphicswindow": "c"
+    }
+}
